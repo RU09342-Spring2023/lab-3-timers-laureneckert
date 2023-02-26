@@ -87,11 +87,13 @@ __interrupt void Port_2(void)
         P2IES &= ~BIT3; // Change edge to falling edge
     }
 
-    else if (P2IES != BIT3 ) // @TODO Fill in this argument within the If statement to check if the interrupt was triggered off a falling edge.
+    else if (P2IES != BIT3) // @TODO Fill in this argument within the If statement to check if the interrupt was triggered off a falling edge.
     {
         LED_Color = 1;
         // @TODO Add code to change which edge the interrupt should be looking for next
         P2IES |= BIT3; // Change edge sensitivity to look for next rising edge
+        P6OUT &= ~BIT6; // Turn off Green LED
     }
+    P1OUT &= ~BIT0; // Turn off Red LED
 }
 
