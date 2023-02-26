@@ -65,7 +65,7 @@ void gpioInit(){
 
       // Configure Button on P2.3 as input with pullup resistor
       P2OUT |= BIT3;                          // Configure P2.3 as pulled-up
-      P2REN |= BIT3;                          // P2.3 pull-up register enable
+      P2REN |= BIT3;                           // P2.3 pull-up register enable
       P2IES &= ~BIT3;                         // P2.3 Low --> High edge
       P2IE |= BIT3;                           // P2.3 interrupt enabled
 
@@ -80,16 +80,18 @@ __interrupt void Port_2(void)
 {
     P2IFG &= ~BIT3;                         // Clear P1.3 IFG
 
-    if ( )       // @TODO Fill in this argument within the If statement to check if the interrupt was triggered off a rising edge.
+    if (P2IES & BIT3)       // @TODO Fill in this argument within the If statement to check if the interrupt was triggered off a rising edge.
     {
         LED_Color = 0;
         // @TODO Add code to change which edge the interrupt should be looking for next
+        P2IES &= ~BIT3; // Change edge to falling edge
     }
 
-    else if ( ) // @TODO Fill in this argument within the If statement to check if the interrupt was triggered off a falling edge.
+    else if (P2IES != BIT3 ) // @TODO Fill in this argument within the If statement to check if the interrupt was triggered off a falling edge.
     {
         LED_Color = 1;
         // @TODO Add code to change which edge the interrupt should be looking for next
+        P2IES |= BIT3; // Change edge sensitivity to look for next rising edge
     }
 }
 
