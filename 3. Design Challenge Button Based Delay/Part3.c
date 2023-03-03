@@ -58,12 +58,12 @@ void gpioInit(){
 void timerInit(){
     //Initialize Timer B0
     TB0CCR0 = 300;  //arbitrary initial value
-    TB0CTL |= TBSSEL_1 + MC_0 + TBCLR; // Set the clock source to ACLK, stop the timer, and clear it
+    TB0CTL |= TBSSEL_1 + MC_0 + ID_3 + TBCLR; // Set the clock source to ACLK, stop the timer, and clear it
     TB0CCTL0 |= CAP + CM_3; // Set Timer B0 to capture mode, set for both edges
 
     //Initialize Timer B1
     TB1CCR0 = blink_period;      // Set the max count for Timer B1
-    TB1CTL = TBSSEL_1 | MC_1;  // ACLK, up mode
+    TB1CTL = TBSSEL_1 | MC_1 | ID_3;  // ACLK, up mode
     TB1CCTL0 = CCIE;       // TBCCR0 interrupt enabled
 }
 
@@ -73,7 +73,7 @@ __interrupt void Port2_ISR(void)
 {
     if (P2IES & BIT3)   //check if the interrupt was triggered off a rising edge
     {
-        TB0CTL |= MC_1; //start timer B0 to measure how long the button is pressed
+        TB0CTL |= MC_2; //start timer B0 to measure how long the button is pressed
 
         P2IES &= ~BIT3; // Change edge to falling edge
     }
@@ -83,7 +83,7 @@ __interrupt void Port2_ISR(void)
 
 
         //Put timer B0 value into the max timer B1 CCR0
-        button_press_time = TB0CCR0; // Record the button press time
+        button_press_time = TB0R; // Record the button press time
         TB1CCR0 = button_press_time; // Set the max count for Timer B1 to the button press time
 
         TB0CTL |= TBCLR; //clear timer B0 for next button press
