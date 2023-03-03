@@ -9,6 +9,7 @@
 
 unsigned const int blink_period_initial = 50000;
 unsigned int blink_period = 50000;
+unsigned int button_press_time = 0;
 
 void gpioInit();
 void timerInit();
@@ -54,8 +55,9 @@ void gpioInit(){
 }
 
 void timerInit(){
-    //Initialize Timer A
-
+    //@TODO Initialize Timer A
+    TA0CTL |= TASSEL_2 + MC_0 + TACLR; // Set the clock source to SMCLK, stop the timer, and clear it
+    TA0CCTL0 |= CAP + CM_3; // Set Timer A to capture mode, set for both edges
 
     //Initialize Timer B
     TB1CCR0 = blink_period;      // Set the max count for Timer B1
@@ -69,16 +71,22 @@ __interrupt void Port2_ISR(void)
 {
     if (P2IES & BIT3)   //check if the interrupt was triggered off a rising edge
     {
-        //start timer A to measure how long the button is pressed
-
+        //@TODO start timer A to measure how long the button is pressed
+        TA0CTL |= MC_1; // Start Timer A
 
         P2IES &= ~BIT3; // Change edge to falling edge
     }
     else if (P2IES != BIT3) //check if the interrupt was triggered off a falling edge
     {
-        //stop timer A to record how long the button was pressed
-        //put timer A value into the max timer B CCR0
+        //@TODO stop timer A to record how long the button was pressed
+        TA0CTL &= ~(MC0 + MC1); // Stop Timer A
 
+        //@TODO put timer A value into the max timer B CCR0
+        button_press_time = TA0CCR0; // Record the button press time
+        TB1CCR0 = button_press_time; // Set the max count for Timer B1 to the button press time
+
+        //@TODO clear timer A for next button press
+        TA0CTL |= TACLR; // Clear Timer A
 
         P2IES |= BIT3; // Change edge sensitivity to look for next rising edge
     }
@@ -93,7 +101,9 @@ __interrupt void Port4_ISR(void)
 {
     blink_period = blink_period_initial;    //set to initial
     TB1CCR0 = blink_period;         //set to initial
-    //reset timer A value
+    //@TODO reset timer A value
+    TA0CTL &= ~(MC0 + MC1); // Stop Timer A
+    TA0CTL |= TACLR; // Clear Timer A
 
     P4IFG &= ~BIT1;         // Clear interrupt flag for P4.1
 }
