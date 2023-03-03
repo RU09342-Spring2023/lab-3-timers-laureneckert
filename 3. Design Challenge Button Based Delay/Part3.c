@@ -6,6 +6,7 @@
  *
  */
 #include <msp430.h>
+#include <msp430fr2355.h>
 
 unsigned const int blink_period_initial = 50000;
 unsigned int blink_period = 50000;
@@ -41,27 +42,28 @@ void gpioInit(){
     //Initialize Button 2.3
     P2OUT |= BIT3;                          // Configure P2.3 as pulled-up
     P2REN |= BIT3;                          // P2.3 pull-up register enable
-    //P2IES &= ~BIT3;                         // P2.3 Falling edge - rise up
-    P2IES |= BIT3;                          // P2.3 Rising edge - press down
+    //P2IES &= ~BIT3;                         // P2.3 Falling edge - button rises up
+    P2IES |= BIT3;                          // P2.3 Rising edge - button press down
     P2IE |= BIT3;                           // P2.3 interrupt enabled
 
     //Initialize Button 4.1
     P4OUT |= BIT1;                          // Configure P2.3 as pulled-up
     P4REN |= BIT1;                          // P4.1 pull-up register enable
-    //P4IES &= ~BIT1;                         // P4.1 Falling edge - rise up
-    P4IES |= BIT1;                          // P4.1 Rising edge - press down
+    //P4IES &= ~BIT1;                         // P4.1 Falling edge - button rises up
+    P4IES |= BIT1;                          // P4.1 Rising edge - button press down
     P4IE |= BIT1;                           // P4.1 interrupt enabled
 
 }
 
 void timerInit(){
-    //@TODO Initialize Timer A
-    TA0CTL |= TASSEL_2 + MC_0 + TACLR; // Set the clock source to SMCLK, stop the timer, and clear it
-    TA0CCTL0 |= CAP + CM_3; // Set Timer A to capture mode, set for both edges
+    //Initialize Timer B0
+    TB0CCR0 = 300;  //arbitrary initial value
+    TB0CTL |= TBSSEL_1 + MC_0 + TBCLR; // Set the clock source to ACLK, stop the timer, and clear it
+    TB0CCTL0 |= CAP + CM_3; // Set Timer B0 to capture mode, set for both edges
 
-    //Initialize Timer B
+    //Initialize Timer B1
     TB1CCR0 = blink_period;      // Set the max count for Timer B1
-    TB1CTL = TBSSEL_1 | MC_2;  // ACLK, continuous mode - change to up mode
+    TB1CTL = TBSSEL_1 | MC_1;  // ACLK, up mode
     TB1CCTL0 = CCIE;       // TBCCR0 interrupt enabled
 }
 
@@ -71,22 +73,20 @@ __interrupt void Port2_ISR(void)
 {
     if (P2IES & BIT3)   //check if the interrupt was triggered off a rising edge
     {
-        //@TODO start timer A to measure how long the button is pressed
-        TA0CTL |= MC_1; // Start Timer A
+        TB0CTL |= MC_1; //start timer B0 to measure how long the button is pressed
 
         P2IES &= ~BIT3; // Change edge to falling edge
     }
     else if (P2IES != BIT3) //check if the interrupt was triggered off a falling edge
     {
-        //@TODO stop timer A to record how long the button was pressed
-        TA0CTL &= ~(MC0 + MC1); // Stop Timer A
+        TB0CTL &= ~(MC0 + MC1); //stop timer B0 to record how long the button was pressed
 
-        //@TODO put timer A value into the max timer B CCR0
-        button_press_time = TA0CCR0; // Record the button press time
+
+        //Put timer B0 value into the max timer B1 CCR0
+        button_press_time = TB0CCR0; // Record the button press time
         TB1CCR0 = button_press_time; // Set the max count for Timer B1 to the button press time
 
-        //@TODO clear timer A for next button press
-        TA0CTL |= TACLR; // Clear Timer A
+        TB0CTL |= TBCLR; //clear timer B0 for next button press
 
         P2IES |= BIT3; // Change edge sensitivity to look for next rising edge
     }
@@ -101,18 +101,20 @@ __interrupt void Port4_ISR(void)
 {
     blink_period = blink_period_initial;    //set to initial
     TB1CCR0 = blink_period;         //set to initial
-    //@TODO reset timer A value
-    TA0CTL &= ~(MC0 + MC1); // Stop Timer A
-    TA0CTL |= TACLR; // Clear Timer A
+
+    //reset timer B0 value
+    TB0CTL &= ~(MC0 + MC1); // Stop Timer B0 - just in case
+    TB0CTL |= TBCLR; // Clear Timer B0
 
     P4IFG &= ~BIT1;         // Clear interrupt flag for P4.1
 }
 
-// Timer B interrupt service routine - blinks LED based on the button press time
+// Timer B1 interrupt service routine - blinks LED based on the button press time
 #pragma vector = TIMER1_B0_VECTOR
 __interrupt void Timer1_B0_ISR(void)
 {
     P1OUT ^= BIT0;          // Toggle P1.0 LED
+
 }
 
 
